@@ -21,3 +21,4 @@ models/
 # Metrics and local logs
 *.json
 *.log
+=0.46.1
