@@ -1,0 +1,23 @@
+# Local Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python caching footprints
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Local Model weights and Hugging Face runtime cache
+cache/
+models/
+.chunks/
+*.bin
+*.pt
+*.safetensors
+
+# Metrics and local logs
+*.json
+*.log
