@@ -1,0 +1,37 @@
+# .github/workflows/main.yml
+name: Comprehensive ML Research Proposal CI Validation Suite
+
+on:
+    push:
+        branches: ["main"]
+    pull_request:
+        branches: ["main"]
+
+jobs:
+    validate-infrastructure:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: 1. Checkout Application Code
+              uses: actions/checkout@v4
+
+            - name: 2. Set Up Python 3.10 Runtime Environment
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.10"
+                  cache: "pip" # Automatically caches downloaded libraries to accelerate workflows
+
+            - name: 3. Upgrade Core Pip Infrastructure
+              run: |
+                  python -m pip install --upgrade pip
+
+            - name: 4. Inject Framework Mock Requirements
+              run: |
+                  # Pull down pytest alongside standard matrix configurations
+                  pip install pytest numpy
+                  # Note: Heavy deep learning weight frameworks are omitted in headless CI systems 
+                  # to guarantee cloud validation times remain under 60 seconds.
+
+            - name: 5. Execute Code Audit & Pytest Verification Sequences
+              run: |
+                  pytest tests/ -v
