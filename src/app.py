@@ -15,8 +15,38 @@ st.markdown(
 )
 st.write("---")
 
+# --- AUTO-PARSING LIVE LOCAL RUN FILES ---
+# This dictionary will store data parsed live from your local runs
+live_runs_data = {}
+
+# Local files to automatically check
+local_log_files = {
+    "PyTorch": "pytorch_benchmark.json",
+    "TensorFlow": "tensorflow_benchmark.json",
+}
+
+for framework, log_file in local_log_files.items():
+    if os.path.exists(log_file):
+        try:
+            with open(log_file, "r") as f:
+                raw_content = json.load(f)
+            if isinstance(raw_content, list) and len(raw_content) > 0:
+                avg_time = sum(d["step_time_ms"] for d in raw_content) / len(
+                    raw_content
+                )
+                peak_vram = max(d["reserved_vram_mb"] for d in raw_content)
+
+                live_runs_data[framework] = {
+                    "avg_step_time_ms": round(avg_time, 2),
+                    "peak_vram_mb": round(peak_vram, 2),
+                    "final_loss": raw_content[-1]["loss"],
+                    "total_episodes": len(raw_content),
+                    "timeline_vram": [d["reserved_vram_mb"] for d in raw_content],
+                }
+        except Exception as e:
+            st.sidebar.error(f"Error auto-parsing {log_file}: {str(e)}")
+
 # --- INITIAL DATA SEED LAYER ---
-# Fallback structure matching your parse_log.py updates
 fallback_data = {
     "optimization": {
         "format": "NF4",
@@ -42,7 +72,9 @@ if os.path.exists("research_proposal_benchmarks.json"):
 else:
     dashboard_data = fallback_data
 
+# Merge any auto-detected runs from disk into our configuration state
 dashboard_data.setdefault("real_runs", {})
+dashboard_data["real_runs"].update(live_runs_data)
 
 # --- SIDEBAR INTERACTIVE CONTROLS ---
 st.sidebar.header("🔧 Interactive Thesis Defense Controls")
@@ -52,30 +84,25 @@ target_epsilon = st.sidebar.slider("Target Privacy Budget (Epsilon ε)", 1.0, 10
 st.sidebar.write("---")
 st.sidebar.header("Advisor Portal: Upload Live Benchmarks")
 st.sidebar.markdown(
-    "Drag and drop your raw evaluation outputs below to recalculate metrics instantly."
+    "Drag and drop your raw evaluation outputs below to override or view metrics instantly."
 )
 
-# Drag & Drop Uploader Widget Interface
 uploaded_files = st.sidebar.file_uploader(
     "Accepts custom benchmark JSON payloads", type=["json"], accept_multiple_files=True
 )
 
-# Intercept and process uploaded files dynamically into runtime memory
 if uploaded_files:
     for uploaded_file in uploaded_files:
         try:
             raw_content = json.load(uploaded_file)
             if isinstance(raw_content, list) and len(raw_content) > 0:
-                # Detect framework paradigm signature from content
-                framework_flag = raw_content[0].get("framework", "Parsed Runtime Run")
-
-                # Dynamically calculate statistics
+                # Determine framework name from file or content structure
+                framework_flag = raw_content[0].get("framework", "Uploaded Profile")
                 avg_time = sum(d["step_time_ms"] for d in raw_content) / len(
                     raw_content
                 )
                 peak_vram = max(d["reserved_vram_mb"] for d in raw_content)
 
-                # Append straight to the active dashboard dataset state
                 dashboard_data["real_runs"][framework_flag] = {
                     "avg_step_time_ms": round(avg_time, 2),
                     "peak_vram_mb": round(peak_vram, 2),
@@ -83,9 +110,7 @@ if uploaded_files:
                     "total_episodes": len(raw_content),
                     "timeline_vram": [d["reserved_vram_mb"] for d in raw_content],
                 }
-                st.sidebar.success(
-                    f"Successfully rendered {framework_flag} log file!"
-                )
+                st.sidebar.success(f"Rendered {framework_flag} log file!")
         except Exception as e:
             st.sidebar.error(f"Error processing file: {str(e)}")
 
@@ -145,6 +170,7 @@ st.write("---")
 st.header("3. Live System Execution Analytics (NVIDIA RTX A1000 Baseline)")
 
 if dashboard_data["real_runs"]:
+    # Dynamically loops and updates based on detected logs
     for framework, stats in dashboard_data["real_runs"].items():
         st.subheader(f"✨ Active Runtime Profile: {framework}")
         c1, c2, c3, c4 = st.columns(4)
@@ -159,5 +185,5 @@ if dashboard_data["real_runs"]:
         st.area_chart(stats["timeline_vram"])
 else:
     st.warning(
-        "No live profile execution logs detected. Drag and drop 'pytorch_benchmark.json' or 'tensorflow_benchmark.json' into the sidebar portal to load active visualization matrices."
+        "No live profile execution logs detected on disk. Run your pipeline benchmarks or drag and drop logs into the portal to populate metrics."
     )
