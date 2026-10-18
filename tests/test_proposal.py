@@ -2,18 +2,16 @@
 import os
 import json
 import pytest
-from src.dashboard import execute_proposal_simulations
+from src.sweep_generator import execute_multi_model_sweep
 
 
-@pytest.fixture(autouse=True)
-def run_pipeline_and_clean_up():
-    """Fixture to ensure the simulation executes and cleans up before/after tests."""
-    # Execute simulation to generate metrics asset
-    execute_proposal_simulations()
+@pytest.fixture(scope="module", autouse=True)
+def run_pipeline_provisioning():
+    """Fixture to ensure the multi-model sweep executes before tests run."""
+    execute_multi_model_sweep()
     yield
-    # Clean up the output artifact post-testing
-    if os.path.exists("research_proposal_benchmarks.json"):
-        os.remove("research_proposal_benchmarks.json")
+    # Optional: Keep the file intact for the Streamlit dashboard app to read later
+    pass
 
 
 def test_benchmark_file_generation():
@@ -26,11 +24,13 @@ def test_optimization_metrics():
     with open("research_proposal_benchmarks.json", "r") as f:
         data = json.load(f)
 
-    assert "optimization" in data
-    assert data["optimization"]["format"] == "NF4"
-    assert (
-        data["optimization"]["static_vram_gb"] <= 6.0
-    )  # Must fit local hardware ceilings
+    assert "models_sweep" in data
+    # Audit the dynamic targets for our models
+    for model_name in ["TinyLlama-1.1B", "Qwen2.5-0.5B"]:
+        assert model_name in data["models_sweep"]
+        metrics = data["models_sweep"][model_name]
+        assert metrics["optimization"]["format"] == "NF4"
+        assert metrics["optimization"]["static_vram_gb"] <= 6.0
 
 
 def test_vulnerability_and_defense_behavior():
@@ -38,12 +38,13 @@ def test_vulnerability_and_defense_behavior():
     with open("research_proposal_benchmarks.json", "r") as f:
         data = json.load(f)
 
-    assert "vulnerability" in data
-    assert "defense" in data
+    for model_name in ["TinyLlama-1.1B", "Qwen2.5-0.5B"]:
+        metrics = data["models_sweep"][model_name]
+        assert "vulnerability" in metrics
+        assert "defense" in metrics
 
-    # Mathematical baseline validation:
-    # Unprotected pipelines must register high threat risks (low perplexity scores)
-    # Protected pipelines must display structural safety (high perplexity scores)
-    assert data["vulnerability"]["unprotected_mia_perplexity"] < 2.0
-    assert data["defense"]["protected_mia_perplexity"] > 3.5
-    assert data["defense"]["epsilon_budget"] < 4.5
+        # Unprotected pipelines must register high threat risks (low perplexity scores)
+        # Protected pipelines must display structural safety (high perplexity scores)
+        assert metrics["vulnerability"]["unprotected_mia_perplexity"] < 2.0
+        assert metrics["defense"]["protected_mia_perplexity"] > 3.5
+        assert metrics["defense"]["epsilon_budget"] < 4.5
