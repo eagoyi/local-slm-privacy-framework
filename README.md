@@ -58,6 +58,7 @@ This master's thesis research repository addresses the critical tension between 
    python3 -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
+   pip freeze > requirements.txt
    ```
 
 3. **Execute the validation pipeline simulation run:**
@@ -66,11 +67,37 @@ This master's thesis research repository addresses the critical tension between 
    python3 src/dashboard.py
    ```
 
+   chmod +x run_all.sh
+4. **Make the Automated Execution Shell Script Executable**
+
+   ```bash
+   chmod +x run_all.sh
+   ```
+5. **Trigger the Entire Application Framework**
+
+   ```bash
+   ./run_all.sh
+   ```
+
+1. Generate the pipeline baseline benchmarks
+
+python3 pytorch_rl_pipeline.py
+python3 tensorflow_rl_pipeline.py
+
+2. Compile the database config manifest mapping
+
+python3 src/parse_logs.py
+
+3. Open your browser dashboard interface layer
+
+streamlit run src/app.py
+
+
 ---
 
 ## Reference Framework Benchmarks
 
 | Evaluation Layer | Active Memory Footprint | Performance Metric Baseline | Primary Security Status |
 | :--- | :--- | :--- | :--- |
-| **Unprotected Base Pipeline** | ~5.5 GB VRAM Space | Mean Latency: `12.49 ms` | 🚨 CRITICAL DATA LEAKAGE (MIA Perplexity < 1.85) |
+| **Unprotected Base Pipeline** | ~5.5 GB VRAM Space | Mean Latency: `12.49 ms` | CRITICAL DATA LEAKAGE (MIA Perplexity < 1.85) |
 | **Opacus DP-SGD Protected** | ~6.2 GB VRAM Space | Privacy Budget: \(\epsilon = 3.8\) | MATHEMATICALLY SECURED AGAINST EXTRACTION |
