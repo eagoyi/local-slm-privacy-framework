@@ -22,3 +22,7 @@ models/
 *.json
 *.log
 =0.46.1
+.secrets
+act
+bin/*
+act_Linux_x86_64.tar.gz

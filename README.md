@@ -94,6 +94,20 @@ streamlit run src/app.py
 
 
 ---
+## Validate yaml syntax
+
+1. Validate YAML syntax (catches typos, bad step refs)
+
+actionlint .github/workflows/*.yml
+
+2. Dry-run (prints steps without executing)
+
+chmod +x test-workflows.sh
+./test-workflows.sh
+
+3. Full local run
+
+act -W .github/workflows/main.yml
 
 ## Reference Framework Benchmarks
 

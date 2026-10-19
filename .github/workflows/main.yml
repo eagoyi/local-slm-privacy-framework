@@ -13,28 +13,27 @@ jobs:
 
     steps:
     - name: 1. Checkout Application Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
-    - name: 2. Set Up Python 3.10 Runtime Environment
+    - name: 2a. Read Python version
+      id: pyver
+      run: echo "version=$(cat .python-version | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+
+    - name: 2b. Set Up Python Runtime
       uses: actions/setup-python@v6
       with:
-        python-version: "3.10"
+        python-version: ${{ steps.pyver.outputs.version }}
         cache: 'pip' # Automatically caches downloaded libraries to accelerate workflows
 
     - name: 3. Upgrade Core Pip Infrastructure
       run: |
         python -m pip install --upgrade pip
+        python -m pip install -r requirements.txt
 
-    - name: 4. Inject Framework Mock Requirements & Coverage Modules
+    - name: 4a. Inject Framework Mock Requirements & Coverage Modules
       run: |
-        # Pull down pytest and coverage dependencies alongside standard matrix configurations
-        pip install pytest pytest-cov numpy
-        # Note: Heavy deep learning weight frameworks are omitted in headless cloud systems 
-        # to guarantee cloud validation execution times remain optimized under 60 seconds.
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        # Use 'python -m pip' to target the isolated runtime instead of system python3
+        python -m pip install pytest pytest-cov numpy
     - name: 5. Execute Multi-Model Parameter Sweep Simulation
       run: |
         # Pre-seed the system dashboard JSON structure before running verification passes
